@@ -1,18 +1,28 @@
 package model
 
 type Code struct {
-    ZipFile []byte
+	S3Bucket        string
+	S3Key           string
+	S3ObjectVersion string
+	ZipFile         []byte
 }
 
 type Function struct {
-    FuncCode  Code
-    Description string
+	FuncCode     Code
+	Description  string
+	FunctionName string
+	Handler      string
+	MemorySize   int
+	Publish      bool
+	Runtime      string
+	Timeout      int
 }
 
 type EventMapping struct {
-    BatchSize int
+	BatchSize        int
+	Enabled          bool
+	EventSourceArn   string
+	FunctionName     string
+	StartingPosition string
 }
 
-
-     
-   

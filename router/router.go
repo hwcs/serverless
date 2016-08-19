@@ -1,18 +1,29 @@
 package router
 
 import (
-    "net/http"
-    "github.com/gin-gonic/gin"
-    "serverless/server"
+	"net/http"
+	"serverless/server"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Load () http.Handler {
-    e := gin.New ()
-    e.Use (gin.Recovery ())
+func Load() http.Handler {
+	e := gin.New() // returns a new blank Engine instance without any middleware attached
 
-    functions := e.Group ("/functions")
-    {
-        functions.POST("", server.CreateFunction)
-    }
-    return e
+	// Use attachs a global middleware to the router. ie. the middleware attached though Use() will be
+	// included in the handlers chain for every single request. Even 404, 405, static files...
+	// For example, this is the right place for a logger or error management middleware.
+	e.Use(gin.Recovery()) // Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
+
+	// Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
+	// For example, all the routes that use a common middlware for authorization could be grouped.
+	functions := e.Group("/functions")
+	{
+		functions.POST("", server.CreateFunction)
+		functions.GET("/:name", server.GetFunction)
+		functions.DELETE("/:name", server.DeleteFunction)
+	}
+
+	return e
 }
+
