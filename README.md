@@ -1,4 +1,4 @@
-This is a serverless prototype like AWS Lambda based on open-lambda project.
+This is a serverless prototype like AWS Lambda based on [open-lambda](https://github.com/open-lambda/open-lambda) project.
 
 Services:
 
