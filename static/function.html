@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Serverless Demo - Function</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/dist/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <div id="top-nav"></div>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-3 col-md-2 sidebar" id="left-nav">
+      </div>
+      <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <ol class="breadcrumb">
+          <li><a href="/functions.html">Functions</a></li>
+          <li class="active" id="fun-name-nav"></li>
+        </ol>
+        <div style="padding: 10px 10px 10px;">
+        	<button id="btn-func-test" type="button" class="btn btn-default">Test</button>
+        	<button id="btn-func-save" type="button" class="btn btn-primary">Save</button>
+        	<button id="btn-func-savetest" type="button" class="btn btn-default">Save and test</button>
+        	<div class="btn-group">
+        		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        		Actions
+        		<span class="caret"></span>
+
+        		</button>
+        		<ul class="dropdown-menu">
+        			<li><a id="btn-test-event" href="javascript:void(0)">Configure test event</a></li>
+        			<li><a id="btn-del-func" href="javascript:void(0)">Delete function</a></li>
+        			<li><a id="btn-download-code" href="javascript:void(0)">Download function code</a></li>
+        		</ul>
+        	</div>
+        </div>
+        <ul id="funcTab" class="nav nav-tabs">
+           <li class="active">
+              <a href="#code" data-toggle="tab">
+                 Code
+              </a>
+           </li>
+           <li><a href="#config" data-toggle="tab">Configuration</a></li>
+           <li><a href="#trigger" data-toggle="tab">Triggers</a></li>
+        </ul>
+        <div id="funcContent" class="tab-content">
+          <div style="padding: 10px 10px 10px;" class="tab-pane fade in active" id="code">
+          	<form role="form" class="form-horizontal">
+	             <div class="form-group">
+                  <label for="selectCodeType" class="col-sm-2 col-sm-offset-2 control-label">Code entry type</label>
+                  <div class="col-sm-2">
+                    <select class="form-control" id="func-code-type">
+                      <option value="inline">Edit code line</option>
+                      <option value="upload">Upload a.ZIP file</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div id="func-code-online">
+                    <textarea id="func-code" class="col-sm-12  form-control" rows="30">
+                    </textarea>
+                  </div>
+                  <div id="func-code-upload">
+                    <label for="selectCodeFile" class="col-sm-2 col-sm-offset-2 control-label">Function packages</label>
+                    <div class="col-sm-3">
+                      <input type="file" class="form-control" id="func-code-file">
+                    </div>
+                  </div>
+                </div>
+								<div id="div-func-exec-result">
+									<div class="form-group">
+	                   <label for="executeStatus" class="col-sm-2 control-label">Execute Status</label>
+	                   <div class="col-sm-3">
+	                       <input type="text" class="form-control" id="func-exec-status" disabled>
+	                   </div>
+	                 </div>
+									 <div class="form-group">
+									 	 <label for="executeTime" class="col-sm-2 control-label">Execute Time</label>
+									 	 <div class="col-sm-3">
+									 			 <input type="text" class="form-control" id="func-exec-time" disabled>
+								 		 </div>
+								  </div>
+									<div class="form-group">
+										<label for="executeResult" class="col-sm-2 control-label">Execute Result</label>
+										<div class="col-sm-10">
+												<textarea id="func-exec-result" class="col-sm-8  form-control" rows="20", disabled>
+		                    </textarea>
+										</div>
+								  </div>
+								</div>
+            </form>
+          </div>
+           <div style="padding: 10px 10px 10px;" class="tab-pane fade" id="config">
+          	<form role="form" class="form-horizontal">
+	        	<div class="form-group">
+                		<label for="selectRuntime" class="col-sm-2 col-sm-offset-2 control-label">Runtime</label>
+           			<div class="col-sm-3">
+           				<select class="form-control" id="func-meta-runtime">
+           					<option value="Python 2.7">Python 2.7</option>
+           					<option value="Node.js 4.3">Node.js 4.3</option>
+           				</select>
+           			</div>
+           		</div>
+           		<div class="form-group">
+                		<label for="setHandler" class="col-sm-2 col-sm-offset-2 control-label">Handler</label>
+                		<div class="col-sm-3">
+           				<input type="text" class="form-control" id="func-meta-handler" placeholder="exports.handler">
+           			</div>
+   				</div>
+           		<div class="form-group">
+                		<label for="setDescription" class="col-sm-2 col-sm-offset-2 control-label">Description</label>
+                		<div class="col-sm-3">
+           				<input type="text" class="form-control" id="func-meta-desc" placeholder="A starter AWS Lambda function">
+           			</div>
+   				</div>
+ 	        	<div class="form-group">
+                		<label for="selectMemory" class="col-sm-2 col-sm-offset-2 control-label">Memory(MB)</label>
+           			<div class="col-sm-3">
+           				<select class="form-control" id="func-meta-mem">
+           					<option>128</option>
+           					<option>256</option>
+           					<option>512</option>
+           					<option>768</option>
+           					<option>1024</option>
+           					<option>1280</option>
+          					<option>1536</option>
+           				</select>
+           			</div>
+           		</div>
+           		<div class="form-group">
+                		<label for="setTimeout" class="col-sm-2 col-sm-offset-2 control-label">Timeout(sec)</label>
+                		<div class="col-sm-3">
+           				<input type="text" class="form-control" id="func-meta-timeout" placeholder="30">
+           			</div>
+   				</div>
+   			</form>
+           </div>
+           <div style="padding: 10px 10px 10px;" class="tab-pane fade" id="trigger">
+          	<form role="form" class="form-horizontal">
+	        	<div class="form-group">
+                		<label for="displayTrigger" class="col-sm-2 col-sm-offset-1 control-label">HTTP Triger:</label>
+	         		<a href="#" class="form-control" id="http-trigger-url">https://ec2-52-25-244-252.us-west-2.compute.amazonaws.com:8080/runLambda/pychat</a>
+                	</div>
+                	 <div class="form-group">
+                	 	<button type="button" class="btn btn-link col-sm-2 col-sm-offset-1 form-controll">Add trigger</button>
+   				</div>
+			</form>
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+	<div class="modal fade" id="func-test-event" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	    <div class="modal-dialog">
+	        <div class="modal-content">
+	            <div class="modal-header">
+	                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	                <h4 class="modal-title" id="myModalLabel">Input test event</h4>
+	            </div>
+	            <div class="modal-body">
+	            		<form role="form">
+		            		<div class="form-group">
+		            			<lable class="control-label col-sm-12">Use the editor below to enter an event to test your function with. Note that changes to event will only be saved locally.</label>
+	            				<textarea id="func-test-event-editor" class="form-control col-sm-offset-1 col-sm-10" rows="20"></textarea>
+	            			</div>
+	            		</form>
+	            	</div>
+	            <div class="modal-footer">
+	                <button id="btn-test-canel" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+	                <button id="btn-test-save" type="button" class="btn btn-default">Save</button>
+	                <button id="btn-test-save-test" type="button" class="btn btn-primary">Save and test</button>
+	            </div>
+	        </div><!-- /.modal-content -->
+	    </div><!-- /.modal -->
+	</div>
+
+  <script src="dist/js/require.js" data-main="js/function.js" defer async="true"></script>
+</body>
+</html>
+

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Serverless Demo - Kafka</title>
+	<link rel="stylesheet" href="/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/dist/css/bootstrap-table.min.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div id="top-nav"></div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar" id="left-nav">
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <ol class="breadcrumb">
+            <li class="active">Topics</li>
+          </ol>
+          <div>
+          <div style="padding: 10px 10px 10px;">
+            <button id="btn-topic-publicsh" type="button" class="btn btn-primary">Publish to topic</button>
+            <button id="btn-topic-new" type="button" class="btn btn-default">Create new topic</button>
+            <div class="btn-group">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+              Actions
+              <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a id="btn-topic-edit" href="javascript:void(0)">Edit Topic Name</a></li>
+                <li><a id="btn-topic-del" href="javascript:void(0)">Delete topics</a></li>
+              </ul>
+            </div>
+          </div>
+          <table id="tbl-topics"
+                 data-toolbar="#toolbar"
+                 data-search="true"
+                 data-show-refresh="true"
+                 data-show-toggle="true"
+                 data-show-columns="true"
+                 data-show-export="true"
+                 data-detail-view="true"
+                 data-minimum-count-columns="2"
+                 data-show-pagination-switch="true"
+                 data-pagination="true"
+                 data-page-list="[10, 25, 50, 100, ALL]"
+                 data-show-footer="false"
+                 data-side-pagination="client"
+                 >
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="dist/js/require.js" data-main="js/kafka.js" defer async="true"></script>
+</body>
+

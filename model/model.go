@@ -1,10 +1,24 @@
 package model
 
+const (
+	CODE_TYPE_INLINE  = "inline"
+	CODE_TYPE_ZIPFILE = "zip"
+)
+
+var RUNTIME_LANGUAGE = map[string]string{
+	"Python 2.7":  ".py",
+	"Node.js 4.3": ".js",
+	"Java":        ".java",
+	"C":           ".c",
+	"C++":         ".cpp",
+}
+
 type Code struct {
 	S3Bucket        string
 	S3Key           string
 	S3ObjectVersion string
-	ZipFile         []byte
+	File            string
+	CodeType        string // inline:inline file, zip: zip file
 }
 
 type Function struct {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Serverless Demo - Home</title>
+	<link rel="stylesheet" href="/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/dist/css/bootstrap-table.min.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <div id="top-nav"></div>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-3 col-md-2 sidebar" id="left-nav">
+      </div>
+      <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <ol class="breadcrumb">
+          <li class="active">Functions</li>
+        </ol>
+        <div>
+        <div style="padding: 10px 10px 10px;">
+        	<button id="btn-func-create" type="button" class="btn btn-primary">Create a Lambda function</button>
+        	<div class="btn-group">
+        		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        		Actions
+        		<span class="caret"></span>
+        		</button>
+        		<ul class="dropdown-menu">
+        			<li><a id="btn-func-test" href="javascript:void(0)">Test function</a></li>
+        			<li><a id="btn-func-del" href="javascript:void(0)">Delete function</a></li>
+        		</ul>
+        	</div>
+		    </div>
+        <table id="tbl-functions"
+               data-toolbar="#toolbar"
+               data-search="true"
+               data-show-refresh="true"
+               data-show-toggle="true"
+               data-show-columns="true"
+               data-show-export="true"
+               data-detail-view="true"
+               data-minimum-count-columns="2"
+               data-show-pagination-switch="true"
+               data-pagination="true"
+               data-page-list="[10, 25, 50, 100, ALL]"
+               data-show-footer="false"
+               data-side-pagination="client"
+               >
+        </table>
+      </div>
+    </div>
+  </div>
+	<script src="dist/js/require.js" data-main="js/functions.js" defer async="true"></script>
+</body>
+</html>
+

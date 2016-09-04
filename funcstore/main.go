@@ -1,13 +1,19 @@
 package main
 
 import (
-    "net/http"
-    "serverless/router"
+	"net/http"
+	"serverless/router"
+	"serverless/util"
 )
 
 func main() {
-    handler := router.Load ()
 
-    http.ListenAndServe (
-        ":8888", handler )
+	if util.Init() != nil {
+		return
+	}
+
+	handler := router.Load()
+
+	http.ListenAndServe(":8888", handler)
 }
+
