@@ -2,7 +2,6 @@ package util
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,105 +12,16 @@ import (
 	"time"
 
 	"encoding/base64"
+	"serverless/config"
 	"serverless/model"
 )
 
-var OPEN_LAMBDA_HOME string
-
-var REDIS_CONF = make(map[string]string)
-
-var LOAD_BALANCER_ADDRESS string
-
-var REGISTRY_ADDRESS string
-
 func Init() error {
-	OPEN_LAMBDA_HOME = os.Getenv("OPEN_LAMBDA_HOME")
-	fmt.Println("OPEN_LAMBDA_HOME:", OPEN_LAMBDA_HOME)
-
-	e := GetRedisConfig()
+	e := InitFuncTempDir()
 	if e != nil {
 		return e
 	}
 
-	e = InitFuncTempDir()
-	if e != nil {
-		return e
-	}
-
-	e = GetLoadBalancerAddress()
-	if e != nil {
-		return e
-	}
-
-	e = GetRegistryAddress()
-	if e != nil {
-		return e
-	}
-
-	return nil
-}
-
-func GetRedisConfig() error {
-	file := OPEN_LAMBDA_HOME + "/util/cluster/redis.json"
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		fmt.Println("GetRedisConfig, ReadFile:", err)
-		return err
-	}
-
-	datajson := []byte(data)
-	err = json.Unmarshal(datajson, &REDIS_CONF)
-	if err != nil {
-		fmt.Println("GetRedisConfig, Unmarshal:", err)
-		return err
-	}
-
-	fmt.Printf("GetRedisConfig: %s:%s\n", REDIS_CONF["network"], REDIS_CONF["port"])
-	return nil
-}
-
-func GetRegistryAddress() error {
-	file := OPEN_LAMBDA_HOME + "/util/cluster/registry.json"
-
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		fmt.Println("GetRegistryAddress, ReadFile:", err)
-		return err
-	}
-
-	datajson := []byte(data)
-	var v map[string]interface{} = make(map[string]interface{})
-	err = json.Unmarshal(datajson, &v)
-	if err != nil {
-		fmt.Println("GetRegistryAddress, Unmarshal:", err)
-		return err
-	}
-	REGISTRY_ADDRESS = v["ip"].(string) + ":5000" // + v["host_port"].(string)
-
-	fmt.Printf("GetRegistryAddress: %s\n", REGISTRY_ADDRESS)
-	return nil
-}
-
-func GetLoadBalancerAddress() error {
-	balancerFile := OPEN_LAMBDA_HOME + "/util/cluster/loadbalancer-1.json"
-
-	data, err := ioutil.ReadFile(balancerFile)
-	if err != nil {
-		fmt.Println("GetLoadBalancerAddress, ReadFile:", err)
-		return err
-	}
-
-	datajson := []byte(data)
-	var v map[string]interface{} = make(map[string]interface{})
-	err = json.Unmarshal(datajson, &v)
-	if err != nil {
-		fmt.Println("GetLoadBalancerAddress, Unmarshal:", err)
-		return err
-	}
-        fmt.Println (v)
-	LOAD_BALANCER_ADDRESS = "http://" + v["ip"].(string) + ":" + v["port"].(string)
-
-	fmt.Printf("GetLoadBalancerAddress: %s\n", LOAD_BALANCER_ADDRESS)
 	return nil
 }
 
@@ -123,8 +33,16 @@ func Trace(msg string) func() {
 	}
 }
 
+//type exec0param func ()
+func Trace1(msg string, doexec func()) {
+	start := time.Now()
+	log.Printf("start %s ...", msg)
+	doexec()
+	log.Printf("exit %s (%s)", msg, time.Since(start))
+}
+
 func InitFuncTempDir() error {
-	dir := OPEN_LAMBDA_HOME + "/tmp"
+	dir := config.Conf.Open_lambda_home + "/tmp"
 	_, err := os.Stat(dir)
 
 	if err == nil {
@@ -194,9 +112,11 @@ func unzipFuncFile(path string, file string) error {
 }
 
 func WriteFuncfile(funcname string, codetype string, content string) (string, error) {
+	defer Trace("WriteFuncfile")()
+
 	tag := GetRandomString(funcname)
 	fmt.Println("WriteFuncfile, image tag:", tag)
-	path := OPEN_LAMBDA_HOME + "/tmp/" + tag
+	path := config.Conf.Open_lambda_home + "/tmp/" + tag
 
 	err := os.Mkdir(path, 0755)
 	if err != nil {
@@ -247,3 +167,4 @@ func DeleteFuncTmpDir(dir string) {
 		fmt.Println("DeleteFuncTmpDir: %s, error:", e.Error())
 	}
 }
+

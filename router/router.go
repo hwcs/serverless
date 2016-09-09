@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 	"serverless/server"
-
+        "github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,6 +30,7 @@ func Load() http.Handler {
 		functions.POST("/:name/invocations", server.InvocateFunction)
 	}
 
+        ginpprof.Wrapper(e)
 	return e
 }
 

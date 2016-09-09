@@ -6,6 +6,7 @@ import (
 
 	"io/ioutil"
 	"net/http"
+	"serverless/config"
 	"serverless/images"
 	"serverless/model"
 	"serverless/util"
@@ -19,6 +20,10 @@ import (
 const MAX_CODE_SIZE = 1024 * 1024 * 100             // code file can't exceed 100M
 const SERVERLESS_FUNC_LIST = "serverless_func_list" // code index table, store function code name into list
 
+func getRedisConn() (redis.Conn, error) {
+	return redis.Dial(config.Conf.Redis_network, config.Conf.Redis_address)
+}
+
 func CreateFunction(c *gin.Context) {
 	defer util.Trace("CreateFunction")()
 
@@ -30,9 +35,10 @@ func CreateFunction(c *gin.Context) {
 		return
 	}
 
-	conn, err := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, err := getRedisConn()
 	if err != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal error"})
+		fmt.Println("CreateFunction, redis.Dial error:", err)
 		return
 	}
 
@@ -98,7 +104,7 @@ func CreateFunction(c *gin.Context) {
 }
 
 func updateFuncImageLabel(funcname string, tag string) error {
-	conn, err := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, err := getRedisConn()
 
 	if err == nil {
 		defer conn.Close()
@@ -119,13 +125,14 @@ func GetFunctionList(c *gin.Context) {
 	maxItems, _ := strconv.Atoi(c.Query("MaxItems"))
 	fmt.Printf("GetFunctionList, marker: %d, maxItems: %d\n", marker, maxItems)
 
-	conn, e1 := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, e1 := getRedisConn()
 
-	defer conn.Close()
 	if e1 != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal Error"})
+		fmt.Printf("GetFunctionList, redis.Dial:%s\n", e1.Error())
 		return
 	}
+	defer conn.Close()
 	reply, e2 := redis.Values(conn.Do("LRANGE", SERVERLESS_FUNC_LIST, marker, maxItems))
 	if e2 != nil {
 		fmt.Println(e2)
@@ -167,7 +174,7 @@ func GetFunctionList(c *gin.Context) {
 func GetFunctionCode(c *gin.Context) {
 	name := c.Param("name")
 	hash := "/functions/" + name
-	conn, e := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, e := getRedisConn()
 	if e != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal Error"})
 	}
@@ -193,7 +200,7 @@ func GetFunctionCode(c *gin.Context) {
 
 func getFunctionInfo(hash string) (interface{}, int) {
 	kv := make(map[string]interface{})
-	conn, e1 := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, e1 := getRedisConn()
 
 	defer conn.Close()
 	if e1 != nil {
@@ -255,7 +262,7 @@ func UpdateFunctionCode(c *gin.Context) {
 
 	name := c.Param("name")
 	hash := "/functions/" + name
-	conn, err := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, err := getRedisConn()
 	if err != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal Error"})
 		return
@@ -323,7 +330,7 @@ func UpdateFunctionConfig(c *gin.Context) {
 
 	name := c.Param("name")
 	hash := "/functions/" + name
-	conn, err := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, err := getRedisConn()
 	if err != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal Error"})
 		return
@@ -355,7 +362,7 @@ func GetFunction(c *gin.Context) {
 	name := c.Param("name")
 	hash := "/functions/" + name
 
-	conn, e1 := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, e1 := getRedisConn()
 
 	if e1 != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal Error"})
@@ -416,7 +423,7 @@ func DeleteFunction(c *gin.Context) {
 	funchash := "/functions/" + name
 	imagehash := "/images/" + name
 
-	conn, err := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, err := getRedisConn()
 	if err != nil {
 		c.JSON(500, gin.H{"ServiceException": "Internal Error"})
 		return
@@ -452,7 +459,7 @@ func DeleteFunction(c *gin.Context) {
 }
 
 func getImageName(hash string) (string, error) {
-	conn, err := redis.Dial(util.REDIS_CONF["network"], util.REDIS_CONF["port"])
+	conn, err := getRedisConn()
 	var v string
 	if err != nil {
 		return v, err
@@ -507,7 +514,7 @@ func InvocateFunction(c *gin.Context) {
 		/////////////////////
 	*/
 
-	url := util.LOAD_BALANCER_ADDRESS + "/runLambda/" + img
+	url := config.Conf.LoadBalancer_address + "/runLambda/" + img
 	fmt.Printf("InvocateFunction, url:%s\n", url)
 	/*
 		buf, err := ioutil.ReadAll(c.Request.Body)

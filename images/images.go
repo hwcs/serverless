@@ -2,50 +2,56 @@ package images
 
 import (
 	"fmt"
-
+	"time"
 	"os"
 	"os/exec"
+	"serverless/config"
 	"serverless/util"
-        "log"
 )
 
 func BuildFuncDockerImage(funcname string, codetype string, code string) (string, error) {
-	tag, _ := util.WriteFuncfile(funcname, codetype, code)
 
-	appPath := util.OPEN_LAMBDA_HOME + "/tmp/" + tag + "/"
-	servercode := util.OPEN_LAMBDA_HOME + "/lambda-generator/pyserver/server.py"
-	configfile := util.OPEN_LAMBDA_HOME + "/lambda-generator/pyserver/config.json"
+	imgName, _ := util.WriteFuncfile(funcname, codetype, code)
+
+	appPath := config.Conf.Open_lambda_home + "/tmp/" + imgName + "/"
+	servercode := config.Conf.Open_lambda_home + "/lambda-generator/pyserver/server.py"
+	configfile := config.Conf.Open_lambda_home + "/lambda-generator/pyserver/config.json"
 
 	fmt.Printf("BuildFuncDockerImage, app path:%s, server code:%s\n", appPath, servercode)
 
 	_, e := util.CopyFile(servercode, appPath+"/server.py")
 	if e != nil {
 		fmt.Println("BuildFuncDockerImage copy file error, ", servercode)
-		return tag, e
+		return imgName, e
 	}
 	_, e = util.CopyFile(configfile, appPath+"/config.json")
 	if e != nil {
 		fmt.Println("BuildFuncDockerImage copy file error, ", configfile)
-		return tag, e
+		return imgName, e
 	}
 
 	CreateDockfile(appPath)
-	build := "docker build -t " + tag + " " + appPath
+
+	fmt.Println("******* start building image....")
+	start := time.Now()
+
+	build := "docker build -t " + imgName + " " + appPath
 	fmt.Println("build image cmd: ", build)
 	cmd := exec.Command("/bin/sh", "-c", build)
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println("BuildFuncDockerImage, %s", err.Error())
-		return tag, err
+		return imgName, err
 	}
+	fmt.Println("******* finish build image, spend time: ", time.Since(start))
 
-	err = PushFuncImage2DockerRegistry(tag)
-	if err != nil {
-		fmt.Println("PushFuncImage2DockerRegistry, %s", err.Error())
-		return tag, err
+	e = PushFuncImage2DockerRegistry(imgName)
+	if e != nil {
+		fmt.Println("PushFuncImage2DockerRegistry, %s", e.Error())
+		return imgName, e
 	}
 	util.DeleteFuncTmpDir(appPath)
-	return tag, nil
+	return imgName, nil
 }
 
 func RemoveImage(img string) {
@@ -64,7 +70,7 @@ func RemoveImage(img string) {
 	fmt.Printf("RemoveImage succeed: %s\n", s1)
 
 	// remove image in registry node
-	s2 := "docker rmi -f " + util.REGISTRY_ADDRESS + "/" + img
+	s2 := "docker rmi -f " + config.Conf.Registry_address + "/" + img
 	cmd = exec.Command("/bin/sh", "-c", s2)
 	err = cmd.Run()
 	if err != nil {
@@ -74,6 +80,34 @@ func RemoveImage(img string) {
 }
 
 // generate dockerfile
+func CreateDockfileBak(path string) {
+
+	dockerfile := path + "/Dockerfile"
+	f, e := os.OpenFile(dockerfile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	if e != nil {
+		fmt.Println("CreateDockfile, error open file")
+	}
+
+	fmt.Fprintln(f, "FROM "+config.Conf.Registry_address+"/ubuntu-py")
+
+	if config.Conf.Use_proxy == "true" {
+		fmt.Fprintln(f, "ENV http_proxy "+config.Conf.Http_proxy)
+		fmt.Fprintln(f, "ENV https_proxy "+config.Conf.Https_proxy)
+	}
+	fmt.Fprintln(f, "RUN apt-get -y install python-pip")
+	fmt.Fprintln(f, "RUN pip --proxy "+config.Conf.Http_proxy+" --trusted-host pypi.python.org install rethinkdb")
+	fmt.Fprintln(f, "RUN pip --proxy "+config.Conf.Http_proxy+" --trusted-host pypi.python.org install Flask")
+
+	if config.Conf.Use_proxy == "true" {
+		fmt.Fprintln(f, "ENV http_proxy \"\"")
+		fmt.Fprintln(f, "ENV https_proxy \"\"")
+	}
+
+	fmt.Fprintln(f, "ADD / /")
+	fmt.Fprintln(f, "CMD python /server.py")
+}
+
+// Create dockerfile from alpine base image
 func CreateDockfile(path string) {
 
 	dockerfile := path + "/Dockerfile"
@@ -81,42 +115,59 @@ func CreateDockfile(path string) {
 	if e != nil {
 		fmt.Println("CreateDockfile, error open file")
 	}
-	fmt.Fprintln(f, "FROM alpine")
-	//fmt.Fprintln(f, "ENV http_proxy http://10.67.202.161:3128")  // proxy环境下用户设置代理，测试用
-	//fmt.Fprintln(f, "ENV https_proxy http://10.67.202.161:3128") // proxy环境下用户设置代理，测试用
-	fmt.Fprintln(f, "RUN apk add --update python py-pip")
 
-	//fmt.Fprintln(f, "RUN pip --proxy http://10.67.202.161:3128 --trusted-host pypi.python.org install rethinkdb") // proxy环境下用户设置代理，测试用
-	//fmt.Fprintln(f, "RUN pip --proxy http://10.67.202.161:3128 --trusted-host pypi.python.org install Flask")     // proxy环境下用户设置代理，测试用
-	//fmt.Fprintln(f, "ENV http_proxy \"\"")                                                                        // proxy环境下用户设置代理，测试用
-	//fmt.Fprintln(f, "ENV https_proxy \"\"")    
-	fmt.Fprintln(f, "RUN pip install rethinkdb")
-	fmt.Fprintln(f, "RUN pip install Flask")   
+	fmt.Fprintln(f, "FROM "+config.Conf.Registry_address+"/"+config.Conf.Base_image)
+
+	if config.Conf.Use_proxy == "true" {
+		fmt.Fprintln(f, "ENV http_proxy "+config.Conf.Http_proxy)
+		fmt.Fprintln(f, "ENV https_proxy "+config.Conf.Https_proxy)
+	}
+
+	if config.Conf.Base_image == "alpine" {
+		fmt.Fprintln(f, "RUN apk add --update python py-pip")
+	} else if config.Conf.Base_image == "ubuntu-py" {
+		fmt.Fprintln(f, "RUN apt-get -y install python-pip")
+	}
+
+	if config.Conf.Use_proxy == "true" {
+		fmt.Fprintln(f, "RUN pip --proxy "+config.Conf.Http_proxy+" --trusted-host pypi.python.org install rethinkdb")
+		fmt.Fprintln(f, "RUN pip --proxy "+config.Conf.Http_proxy+" --trusted-host pypi.python.org install Flask")
+	} else {
+		fmt.Fprintln(f, "RUN pip install rethinkdb")
+		fmt.Fprintln(f, "RUN pip install Flask")
+	}
+
+	if config.Conf.Use_proxy == "true" {
+		fmt.Fprintln(f, "ENV http_proxy \"\"")
+		fmt.Fprintln(f, "ENV https_proxy \"\"")
+	}
+
 	fmt.Fprintln(f, "ADD / /")
 	fmt.Fprintln(f, "CMD python /server.py")
-
 }
 
-func PushFuncImage2DockerRegistry(appname string) error {
-	img := util.REGISTRY_ADDRESS + "/" + appname
-	tag := "docker tag " + appname + " " + img
+func PushFuncImage2DockerRegistry(name string) error {
+	defer util.Trace("PushFuncImage2DockerRegistry")()
 
-	fmt.Println("docker tag:", tag)
-	out, err := exec.Command("/bin/sh", "-c", tag).Output()
+	img := config.Conf.Registry_address + "/" + name
+	tagCmd := "docker tag " + name + " " + img
+
+	fmt.Println("PushFuncImage2DockerRegistry, docker tag:", tagCmd)
+	out, err := exec.Command("/bin/sh", "-c", tagCmd).Output()
 	if err != nil {
-		log.Println(err)
+		fmt.Println("PushFuncImage2DockerRegistry, docker tag error: ", err)
+		return err
 	}
-	log.Println(string(out))
+	fmt.Println("PushFuncImage2DockerRegistry, docker tag output: ", out)
 
-	pushimg := "docker push " + img
-	fmt.Println("push image:", pushimg)
+	pushImgCmd := "docker push " + img
+	fmt.Println("PushFuncImage2DockerRegistry, push image:", pushImgCmd)
 
-	out, err = exec.Command("/bin/sh", "-c", pushimg).Output()
+	out, err = exec.Command("/bin/sh", "-c", pushImgCmd).Output()
 	if err != nil {
-		log.Println(err)
+		fmt.Println("PushFuncImage2DockerRegistry, docker push error: ", err)
+	} else {
+		fmt.Println("PushFuncImage2DockerRegistry, docker push output: ", out)
 	}
-	log.Println(string(out))
-
 	return err
 }
-
